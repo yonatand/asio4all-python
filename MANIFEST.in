@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include asio4all *.pyx *.pyi *.py
+recursive-include asio4all/lib *.cpp *.h
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .git*
+prune build
+prune dist

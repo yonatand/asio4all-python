@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=70.0.0", "wheel", "Cython>=3.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asio4all-python"
+version = "0.0.1"
+description = "Python bindings for ASIO4ALL audio driver interface"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    {name = "Yonatan Dolgopyatov", email = "yonadolg@gmail.com"},
+]
+keywords = ["asio4all", "audio", "driver", "windows", "interface"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: Microsoft :: Windows",
+]
+dependencies = [
+    "cython>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/asio4all-python"
+Repository = "https://github.com/yourusername/asio4all-python"
+Issues = "https://github.com/yourusername/asio4all-python/issues"
+
+[tool.setuptools]
+packages = ["asio4all"]
+zip-safe = false
