@@ -1,0 +1,159 @@
+name: Build and Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0, v0.1.0, etc.
+  release:
+    types: [published]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+        architecture: ['x64']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build wheel cython>=3.0.0 setuptools>=70.0.0
+        pip install -r requirements.txt
+    
+    - name: Build wheel
+      run: |
+        python -m build --wheel
+    
+    - name: Upload wheel artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels-${{ matrix.python-version }}-${{ matrix.architecture }}
+        path: dist/*.whl
+
+  build-sdist:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build cython>=3.0.0 setuptools>=70.0.0
+        pip install -r requirements.txt
+    
+    - name: Build source distribution
+      run: |
+        python -m build --sdist
+    
+    - name: Upload sdist artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: sdist
+        path: dist/*.tar.gz
+
+  test-package:
+    needs: [build-windows, build-sdist]
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.10', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Download wheel artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: wheels-${{ matrix.python-version }}-x64
+        path: dist/
+    
+    - name: Install and test package
+      run: |
+        python -m pip install --upgrade pip
+        # Install the wheel
+        pip install dist/*.whl
+        # Basic import test
+        python -c "import asio4all; print('Import successful!'); print('Version:', asio4all.__version__)"
+        # Run test script if it exists
+        if (Test-Path "test_asio4all.py") {
+          python test_asio4all.py
+        }
+
+  publish-testpypi:
+    needs: [build-windows, build-sdist, test-package]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/asio4all-python
+    permissions:
+      id-token: write  # For trusted publishing
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+    
+    - name: Prepare distribution files
+      run: |
+        mkdir -p dist/
+        find artifacts/ -name "*.whl" -exec cp {} dist/ \;
+        find artifacts/ -name "*.tar.gz" -exec cp {} dist/ \;
+        ls -la dist/
+    
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
+        verbose: true
+
+  publish-pypi:
+    needs: [build-windows, build-sdist, test-package]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/asio4all-python
+    permissions:
+      id-token: write  # For trusted publishing
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+    
+    - name: Prepare distribution files
+      run: |
+        mkdir -p dist/
+        find artifacts/ -name "*.whl" -exec cp {} dist/ \;
+        find artifacts/ -name "*.tar.gz" -exec cp {} dist/ \;
+        ls -la dist/
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        verbose: true
