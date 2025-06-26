@@ -215,7 +215,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
-### v1.0.0
+### v0.0.1
 - Initial release
 - Basic ASIO4ALL interface bindings
 - Device, interface, and pin property access
