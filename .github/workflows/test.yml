@@ -1,0 +1,52 @@
+name: Test Build
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+    paths:
+      - '**.py'
+      - '**.pyx'
+      - '**.cpp'
+      - '**.h'
+      - 'setup.py'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+
+jobs:
+  test-build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.10', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build wheel cython>=3.0.0 setuptools>=70.0.0
+        pip install -r requirements.txt
+    
+    - name: Build extension
+      run: |
+        python setup.py build_ext --inplace
+    
+    - name: Test import
+      run: |
+        python -c "import asio4all; print('Import successful!'); print('Version:', asio4all.__version__)"
+    
+    - name: Run tests
+      run: |
+        if (Test-Path "test_asio4all.py") {
+          python test_asio4all.py
+        } else {
+          Write-Output "No test file found, skipping tests"
+        }
